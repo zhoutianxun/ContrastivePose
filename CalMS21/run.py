@@ -45,7 +45,7 @@ behavior_class = {0: "attack",
 """
 Load Data
 """
-trainset_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "task_1_datasets", "trainset"))
+trainset_path = os.path.join(os.path.getcwd(), "datasets", "trainset")
 X, X_handcraft, _, Y = get_dataset(trainset_path,
                                    seq_length,
                                    width_original=width_original,
@@ -125,7 +125,7 @@ del train_data, train_loader, test_data, test_loader, valid_loader
 """
 Test on new dataset
 """
-testset_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "task_1_datasets", "testset"))
+testset_path = os.path.join(os.path.getcwd(), "datasets", "testset")
 X_test, X_test_hc, X_test_tensordata, y_test = get_dataset(testset_path,
                                                            seq_length,
                                                            width_original=width_original,

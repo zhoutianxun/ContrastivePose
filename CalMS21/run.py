@@ -182,23 +182,3 @@ y_pred_enc = clf_enc.predict(X_test_encoded)
 
 print(f"Learnt Features ({test}):")
 print(classification_report(y_true, y_pred_enc, zero_division=0))
-
-
-# visualize embeddings using UMAP
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(X_test_encoded)
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_test.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Learnt Feature Representation")
-fig.show()
-
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(np.squeeze(X_test_hc.numpy()).reshape(test_size, -1))
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_test.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Handcrafted Feature Representation")
-fig.show()
-
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(np.squeeze(X_test.numpy()).reshape(test_size, -1))
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_test.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Original Feature Representation")
-fig.show()

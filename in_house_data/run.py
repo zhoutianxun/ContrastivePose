@@ -22,7 +22,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 # Mode
 train = False
-test = "contrastive"  # contrastive, finetune, from_scratch
+test = "finetune"  # contrastive, finetune, from_scratch
 experiment = 8
 
 # Constants
@@ -68,7 +68,7 @@ X_test, X_test_hc, _, Y_test = get_dataset(trainset_path,
                                               seq_length,
                                               width_original=width_original,
                                               height_original=height_original,
-                                              undersample=None)#"equalize")
+                                              undersample="equalize")
 
 # prepare train test split
 test_split = 0.20
@@ -188,22 +188,3 @@ y_pred_enc = clf_enc.predict(X_test_encoded)
 
 print(f"Learnt Features ({test}):")
 print(classification_report(y_true, y_pred_enc, zero_division=0))
-
-# visualize embeddings using UMAP
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(X_train_encoded)
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_valid.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Learnt Feature Representation")
-fig.show()
-
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(np.squeeze(X_valid_hc.numpy()).reshape(train_size, -1))
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_valid.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Handcrafted Feature Representation")
-fig.show()
-
-umap_2d = UMAP(n_components=2, init='random', random_state=42)
-viz_results = umap_2d.fit_transform(np.squeeze(X_valid.numpy()).reshape(train_size, -1))
-fig = px.scatter(viz_results, x=0, y=1, color=np.vectorize(behavior_class.__getitem__)(y_valid.numpy().astype(int)),
-                 labels={'0': 'UMAP 1', '1': 'UMAP 2'}, title="Original Feature Representation")
-fig.show()

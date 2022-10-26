@@ -22,7 +22,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 # Mode
 train = False
-test = "contrastive"  # contrastive, finetune, from_scratch
+test = "finetune"  # contrastive, finetune, from_scratch
 experiment = 1
 
 # Constants

@@ -23,7 +23,7 @@ from torch.utils.data import TensorDataset, DataLoader
 # Mode
 train = False
 test = "finetune"  # contrastive, finetune, from_scratch
-experiment = 8
+experiment = 1
 
 # Constants
 width_original = 1920
@@ -181,10 +181,10 @@ print(classification_report(y_true, y_pred_hc, zero_division=0))
 
 # learnt features
 clf_enc = RandomForestClassifier()
-#clf_enc.fit(np.concatenate((X_train_encoded, X_valid_hc.numpy()[:,:,:16].reshape(train_size, -1)), axis=1), y_valid.numpy())
-#y_pred_enc = clf_enc.predict(np.concatenate((X_test_encoded, X_test_hc.numpy()[:,:,:16].reshape(test_size, -1)), axis=1))
-clf_enc.fit(X_train_encoded, y_valid.numpy())
-y_pred_enc = clf_enc.predict(X_test_encoded)
+clf_enc.fit(np.concatenate((X_train_encoded, X_valid_hc.numpy()[:,:,:16].reshape(train_size, -1)), axis=1), y_valid.numpy())
+y_pred_enc = clf_enc.predict(np.concatenate((X_test_encoded, X_test_hc.numpy()[:,:,:16].reshape(test_size, -1)), axis=1))
+#clf_enc.fit(X_train_encoded, y_valid.numpy())
+#y_pred_enc = clf_enc.predict(X_test_encoded)
 
 print(f"Learnt Features ({test}):")
 print(classification_report(y_true, y_pred_enc, zero_division=0))

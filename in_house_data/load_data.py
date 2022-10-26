@@ -83,17 +83,20 @@ def get_dataset(dataset_path,
     X_v = np.concatenate((np.zeros((1, X_v.shape[1])), X_v), axis=0)
 
     # Compute pairwise distance
-    comb = np.array(list(combinations([i for i in range(8)], 2)))
+    comb = np.array(list(combinations([i for i in range(X_pts.shape[1]//2)], 2))) #8
     comb = comb[np.where((comb[:, 1] > comb[:, 0]) & (comb[:, 1] > 15) & (comb[:, 0] < 16))]
     X_dist = np.zeros((X_np.shape[0], len(comb)))
+
     for i, c in enumerate(comb):
         part_1 = c[0]
         part_2 = c[1]
-        X_dist[:, i] = distance(X_centerpts[:, part_1 * 2: part_1 * 2 + 2], X_centerpts[:, part_2 * 2: part_2 * 2 + 2])
+        #X_dist[:, i] = distance(X_centerpts[:, part_1 * 2: part_1 * 2 + 2], X_centerpts[:, part_2 * 2: part_2 * 2 + 2])
+        X_dist[:, i] = distance(X_pts[:, part_1 * 2: part_1 * 2 + 2], X_pts[:, part_2 * 2: part_2 * 2 + 2])
 
     # Create feature sets
     X_np = np.concatenate((X_pts, X_v), axis=1)
-    X_handcraft = np.concatenate((X_overlap, X_centerpts, X_v), axis=1)
+    #X_handcraft = np.concatenate((X_overlap, X_centerpts, X_v), axis=1)
+    X_handcraft = np.concatenate((X_overlap, X_pts, X_dist, X_v), axis=1)
 
     # Form sliding windows
     X, Y = sliding_windows(X_np, Y_true.to_numpy().reshape(-1, 1), seq_length)

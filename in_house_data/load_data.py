@@ -38,7 +38,8 @@ def get_dataset(dataset_path,
                 height_original=1080,
                 impute=True,
                 undersample=None,
-                sample_amount=10000):
+                sample_amount=10000,
+                random_seed=None):
     # Load data
     if type(dataset_path) == list:
         df = None
@@ -59,7 +60,7 @@ def get_dataset(dataset_path,
     X_np = X.to_numpy()
     del X
     if impute:
-        imputer = IterativeImputer(random_state=42)
+        imputer = IterativeImputer(random_state=random_seed)
         X_np = imputer.fit_transform(X_np)
 
     # Compute box overlap
@@ -108,7 +109,7 @@ def get_dataset(dataset_path,
     Y = Y.reshape(-1)
 
     if undersample == "equalize":
-        sampler = RandomUnderSampler(random_state=42)
+        sampler = RandomUnderSampler(random_state=random_seed)
         n, s, f = X.shape
         fhc = X_handcraft.shape[-1]
         X_temp, Y = sampler.fit_resample(np.concatenate((X.reshape(n, -1), X_handcraft.reshape(n, -1)), axis=1), Y)
@@ -117,7 +118,9 @@ def get_dataset(dataset_path,
 
     elif undersample == "random":
         # Undersample to fixed number
-        keep = np.random.choice(len(Y), sample_amount)
+        rng = np.random.default_rng(random_seed)
+        keep = rng.choice(len(Y), sample_amount, replace=False)
+        #keep = np.random.choice(len(Y), sample_amount)
         X = X[keep]
         Y = Y[keep]
         X_handcraft = X_handcraft[keep]

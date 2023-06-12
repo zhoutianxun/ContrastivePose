@@ -5,10 +5,10 @@ from load_data import get_dataset, encode_data
 from models import Contrastive_model, FineTuneModel
 from trainer import train_model, train_finetune_model
 
-#plotting
-import plotly.express as px
-import plotly.io as pio
-from umap import UMAP
+# #plotting
+# import plotly.express as px
+# import plotly.io as pio
+# from umap import UMAP
 
 # sklearn
 from sklearn.model_selection import train_test_split
@@ -22,8 +22,8 @@ from torch.utils.data import TensorDataset, DataLoader
 
 # Mode
 train = False
-test = "finetune"  # contrastive, finetune, from_scratch
-experiment = 1
+test = "from_scratch"  # contrastive, finetune, from_scratch
+experiment = 3
 
 # Constants
 width_original = 1920
@@ -35,7 +35,9 @@ batch_size = 64
 original_features = 144 #128
 extracted_features = 80 #64
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-pio.renderers.default = 'browser'
+random_seed = experiment #42
+#pio.renderers.default = 'browser' #browser
+print(f"device engaged: {device}")
 
 behavior_class = {0: "nose-nose sniff",
                   1: "mutual circle",
@@ -57,7 +59,8 @@ if train:
                                          seq_length,
                                          width_original=width_original,
                                          height_original=height_original,
-                                         undersample=None)
+                                         undersample=None,
+                                         random_seed=random_seed)
 
     train_data = TensorDataset(X_train, y_train)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -68,12 +71,13 @@ X_test, X_test_hc, _, Y_test = get_dataset(trainset_path,
                                               seq_length,
                                               width_original=width_original,
                                               height_original=height_original,
-                                              undersample="equalize")
+                                              undersample="equalize",
+                                              random_seed=random_seed)
 
 # prepare train test split
 test_split = 0.20
-X_valid, X_test, y_valid, y_test = train_test_split(X_test, Y_test, test_size=test_split, random_state=42, stratify=Y_test)
-X_valid_hc, X_test_hc, y_valid_hc, y_test_hc = train_test_split(X_test_hc, Y_test, test_size=test_split, random_state=42,
+X_valid, X_test, y_valid, y_test = train_test_split(X_test, Y_test, test_size=test_split, random_state=random_seed, stratify=Y_test)
+X_valid_hc, X_test_hc, y_valid_hc, y_test_hc = train_test_split(X_test_hc, Y_test, test_size=test_split, random_state=random_seed,
                                                                 stratify=Y_test)
 
 valid_data = TensorDataset(X_valid, y_valid)
@@ -88,8 +92,8 @@ if train:
     feature_extractor = Contrastive_model(seq_length, original_features, extracted_features)
     contrastive_model_path = os.path.join(os.getcwd(), "Models", f"contrast_v{experiment}.pt")
     lr = 0.003
-    epochs = 100
-    patience = 30
+    epochs = 15
+    patience = 15
 
     print("Training model in progress...")
     train_model(feature_extractor, contrastive_model_path, train_loader, valid_loader, device, lr, epochs, patience,
@@ -106,8 +110,8 @@ if train:
     fine_tune_model = fine_tune_model.to(device)
     finetune_model_path = os.path.join(os.getcwd(), "Models", f"finetune_v{experiment}.pt")
     lr = 0.001
-    epochs = 100
-    patience = 60
+    epochs = 45
+    patience = 10
 
     print("Fine tuning model in progress...")
     train_finetune_model(fine_tune_model, finetune_model_path, valid_loader, test_loader, device, lr, epochs, patience)
@@ -121,8 +125,8 @@ if train:
     from_scratch_model = from_scratch_model.to(device)
     from_scratch_model_path = os.path.join(os.getcwd(), "Models", f"train_from_scratch_v{experiment}.pt")
     lr = 0.001
-    epochs = 100
-    patience = 60
+    epochs = 60
+    patience = 30
 
     print("Fine tuning model in progress...")
     train_finetune_model(from_scratch_model, from_scratch_model_path, valid_loader, test_loader, device, lr, epochs,
@@ -136,7 +140,8 @@ X_test, X_test_hc, X_test_tensordata, y_test = get_dataset(testset_path,
                                                            seq_length,
                                                            width_original=width_original,
                                                            height_original=height_original,
-                                                           undersample=None)
+                                                           undersample=None,
+                                                           random_seed=random_seed)
 
 assert test in ["contrastive", "finetune", "from_scratch"]
 if test == "contrastive":
@@ -171,20 +176,38 @@ y_pred = clf.predict(np.squeeze(X_test.numpy()).reshape(test_size, -1))
 print("No Feature Extraction:")
 print(classification_report(y_true, y_pred, zero_division=0))
 
-# handcrafted features
+# handcrafted features set 1
+clf_hc = RandomForestClassifier()
+clf_hc.fit(np.squeeze(X_valid_hc.numpy()[:,:,16:]).reshape(train_size, -1), y_valid.numpy())
+y_pred_hc = clf_hc.predict(X_test_hc[:,:,16:].numpy().reshape(test_size, -1))
+
+print("Handcraft Features Set 1:")
+print(classification_report(y_true, y_pred_hc, zero_division=0))
+
+# handcrafted features set 2
 clf_hc = RandomForestClassifier()
 clf_hc.fit(np.squeeze(X_valid_hc.numpy()).reshape(train_size, -1), y_valid.numpy())
 y_pred_hc = clf_hc.predict(X_test_hc.numpy().reshape(test_size, -1))
 
-print("Handcraft Features:")
+print("Handcraft Features Set 2:")
 print(classification_report(y_true, y_pred_hc, zero_division=0))
 
 # learnt features
+clf_enc = RandomForestClassifier()
+clf_enc.fit(X_train_encoded, y_valid.numpy())
+y_pred_enc = clf_enc.predict(X_test_encoded)
+#clf_enc.fit(X_train_encoded, y_valid.numpy())
+#y_pred_enc = clf_enc.predict(X_test_encoded)
+
+print(f"Learnt Features ({test}):")
+print(classification_report(y_true, y_pred_enc, zero_division=0))
+
+# learnt features + overlap features
 clf_enc = RandomForestClassifier()
 clf_enc.fit(np.concatenate((X_train_encoded, X_valid_hc.numpy()[:,:,:16].reshape(train_size, -1)), axis=1), y_valid.numpy())
 y_pred_enc = clf_enc.predict(np.concatenate((X_test_encoded, X_test_hc.numpy()[:,:,:16].reshape(test_size, -1)), axis=1))
 #clf_enc.fit(X_train_encoded, y_valid.numpy())
 #y_pred_enc = clf_enc.predict(X_test_encoded)
 
-print(f"Learnt Features ({test}):")
+print(f"Learnt Features + Overlap ({test}):")
 print(classification_report(y_true, y_pred_enc, zero_division=0))

@@ -15,6 +15,32 @@ class MLP_feature_extractor(nn.Module):
         x = nn.ReLU(inplace=True)(x)
         x = self.linear2(x)
         return x
+    
+
+class TSCNN_feature_extractor(nn.Module):
+    def __init__(self, seq_length, original_features, extracted_features):
+        super(TSCNN_feature_extractor, self).__init__()
+        self.spatial_conv1 = nn.Conv1d(original_features, extracted_features*4, 1)
+        self.spatial_conv2 = nn.Conv1d(extracted_features*4, extracted_features, 1)
+        if (seq_length+1)%2 == 0:
+            w1 = (seq_length+1)/2
+            w2 = w1
+        else:
+            w1 = (seq_length+1)//2
+            w2 = seq_length+1-w1
+        self.temporal_conv1 = nn.Conv1d(extracted_features, extracted_features, w1)
+        self.bn1 = nn.BatchNorm1d(extracted_features)
+        self.temporal_conv2 = nn.Conv1d(extracted_features, extracted_features, w2)
+
+    def forward(self, x):
+        # x.shape = (batch_size, seq_length, original_features)
+        x = x.permute(0, 2, 1)
+        x = nn.ReLU()(self.spatial_conv1(x))
+        x = nn.ReLU()(self.spatial_conv2(x))
+        x = self.temporal_conv1(x)
+        x = nn.ReLU()(self.bn1(x))
+        x = self.temporal_conv2(x).view(x.shape[0], -1)
+        return x
 
 
 class Projection_head(nn.Module):

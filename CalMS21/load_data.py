@@ -14,7 +14,8 @@ def get_dataset(dataset_path,
                 width_original=1024,
                 height_original=570,
                 undersample=None,
-                sample_amount=10000):
+                sample_amount=10000,
+                random_seed=None):
     # Load data
     files = list(os.listdir(dataset_path))
     df = None
@@ -48,7 +49,7 @@ def get_dataset(dataset_path,
         part_1 = c[0]
         part_2 = c[1]
         X_handcraft[:, i] = distance(X_np[:, part_1 * 2: part_1 * 2 + 2], X_np[:, part_2 * 2: part_2 * 2 + 2])
-    X_handcraft = np.concatenate((X_handcraft, X_v.to_numpy()[:, 28:]), axis=1)
+    X_handcraft = np.concatenate((X_handcraft, X_v.to_numpy()), axis=1) #X_v.to_numpy()[:, 28:]
     X_np = np.concatenate((X_np, X_v.to_numpy()[:, 28:]), axis=1)
     del X_v
 
@@ -62,7 +63,7 @@ def get_dataset(dataset_path,
     Y = Y.reshape(-1)
 
     if undersample == "equalize":
-        sampler = RandomUnderSampler(random_state=42)
+        sampler = RandomUnderSampler(random_state=random_seed)
         n, s, f = X.shape
         fhc = X_handcraft.shape[-1]
         X_temp, Y = sampler.fit_resample(np.concatenate((X.reshape(n, -1), X_handcraft.reshape(n, -1)), axis=1), Y)
@@ -71,7 +72,9 @@ def get_dataset(dataset_path,
 
     elif undersample == "random":
         # Undersample to fixed number
-        keep = np.random.choice(len(Y), sample_amount)
+        rng = np.random.default_rng(random_seed)
+        keep = rng.choice(len(Y), sample_amount, replace=False)
+        #keep = np.random.choice(len(Y), sample_amount)
         X = X[keep]
         Y = Y[keep]
         X_handcraft = X_handcraft[keep]
@@ -100,3 +103,16 @@ def encode_data(tensordata, model, device):
         encoded_samples.append(encoded_sample)
     encoded_samples = pd.DataFrame(encoded_samples)
     return encoded_samples.to_numpy()
+
+def predict_data(tensordata, model, device):
+    model = model.to(device)
+    preds = []
+    for sample in tqdm(tensordata):
+        x = sample[0].to(device)
+        model.eval()
+        with torch.no_grad():
+            _, pred = model(torch.unsqueeze(x, 0))
+        # Append to list
+        pred = pred.squeeze().cpu().numpy()
+        preds.append(pred)
+    return np.array(preds)

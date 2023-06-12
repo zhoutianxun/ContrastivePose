@@ -19,7 +19,7 @@ def sliding_windows(X, Y, seq_length):
     return x, y
 
 
-def augment_data(x_in, mirror=True, shift=True, rotate=True, velocity=True):
+def augment_data(x_in, mirror=True, shift=True, rotate=True, jitter=True, velocity=True):
     if velocity:
         features = x_in.shape[-1] // 2
     else:
@@ -81,6 +81,9 @@ def augment_data(x_in, mirror=True, shift=True, rotate=True, velocity=True):
         y_shift = np.random.random(size=(len(x))) * y_shift_range - min_y
         x[:, :, 0:features:2] = x[:, :, 0:features:2] + x_shift.reshape(-1, 1, 1)
         x[:, :, 1:features:2] = x[:, :, 1:features:2] + y_shift.reshape(-1, 1, 1)
+
+    if jitter:
+        x = x + 0.03 * (np.random.rand(*x.shape) * 2 - 1)
 
     if type(x_in) == torch.Tensor:
         return torch.unsqueeze(torch.from_numpy(x), 1)
